@@ -5,6 +5,8 @@ import yaml
 import json
 from pathlib import Path
 import urllib.request
+import sys
+import json
 
 def config_generator(domain, uuid, operatorName="", ip=""):
     if ip == "":
@@ -27,12 +29,25 @@ with open('docker-compose.yml', 'r') as f:
 uuid = v2ray_config['inbounds'][0]['settings']['clients'][0]['id']
 domain = dockerCompose["services"]["v2ray"]["environment"][1].split('=')[1];
 isUsingCloudFlareCDNProxy = 'no'
+justJSON = 'no'
+jsonObj = []
 
-isUsingCloudFlareCDNProxy = input("Are you using CloudFlare CDN Proxy? type 'yes' or 'no'. Default is no.\n")
+if ('--cloudflare-enable' in sys.argv):
+    isUsingCloudFlareCDNProxy = 'yes'
+    justJSON = 'yes'
+else:
+    isUsingCloudFlareCDNProxy = input("Are you using CloudFlare CDN Proxy? type 'yes' or 'no'. Default is no.\n")
+    
 if isUsingCloudFlareCDNProxy == 'yes':
-    print("\nGet latest data from http://bot.sudoer.net/best.cf.iran ...\n")
     enhancedIPList = []
+    if(justJSON == 'no'):
+        print("\nGet latest data from http://bot.sudoer.net/best.cf.iran ...\n")
     for line in urllib.request.urlopen("http://bot.sudoer.net/best.cf.iran"):
-        print(line.split()[0].decode("utf-8")  + " ISP. " + "Config for copy/paste:\n" + config_generator(domain, uuid, line.split()[0].decode("utf-8"), line.split()[1].decode("utf-8")) + "\n" )
+        if(justJSON == 'yes'):
+            jsonObj.append({"name": line.split()[0].decode("utf-8"), "config": config_generator(domain, uuid, line.split()[0].decode("utf-8"), line.split()[1].decode("utf-8"))})
+        else:
+            print(line.split()[0].decode("utf-8")  + " ISP. " + "Config for copy/paste:\n" + config_generator(domain, uuid, line.split()[0].decode("utf-8"), line.split()[1].decode("utf-8")) + "\n" )
 else:
     print(config_generator(domain, uuid))
+    
+print(json.dumps(jsonObj))    
